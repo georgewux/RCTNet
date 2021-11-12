@@ -85,4 +85,8 @@ class TrainOptions(BaseOptions):
 
         self.parser.add_argument('--no_html', action='store_true',
                                  help='do not save intermediate training results to [checkpoints_dir]/[name]/web/')
+
+        self.parser.add_argument('--lr', type=float, default=5e-4, help='learning rate of training')
+        self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
+
         self.isTrain = True

@@ -21,6 +21,8 @@ class RCTNet(BaseModel):
         self.input_img = torch.zeros([opt.batch_size, 3, opt.fine_size, opt.fine_size], device=self.device)
         self.img_paths = []
 
+        self.l1_loss = nn.L1Loss()
+        self.l1_loss.to(self.device)
         self.vgg_loss = Loss.PerceptualLoss(opt)
         self.vgg_loss.to(self.device)
         self.vgg = Loss.load_vgg16("./models")
@@ -34,7 +36,13 @@ class RCTNet(BaseModel):
         self.local_rct = networks.define_L_rct(self.opt, self.device)
 
         if self.isTrain:
-            self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + list(self.bifpn.parameters()) + l)
+            self.optimizer = torch.optim.Adam(
+                list(self.encoder.parameters()) + list(self.bifpn.parameters()) + list(
+                    self.global_rct.parameters()) + list(self.local_rct.parameters()),
+                lr=self.opt.lr,
+                betas=(self.opt.beta1, 0.999),
+                weight_decay=1e-5
+            )
 
         if opt.isTrain:
             self.encoder.train()
