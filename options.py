@@ -39,6 +39,7 @@ class BaseOptions(object):
         self.parser.add_argument('--ngf', default=64, type=int, help='number of global rct feature')
         self.parser.add_argument('--nlf', default=16, type=int, help='number of local rct feature')
         self.parser.add_argument('--mesh_size', default=31, type=int, help='number of mesh for local rct')
+        self.parser.add_argument('--balance_lambda', default=0.04, type=float, help='weight to balance two loss')
 
         # perceptual loss from vgg
         self.parser.add_argument('--no_vgg_instance', action='store_true', help='vgg instance normalization')
@@ -88,5 +89,16 @@ class TrainOptions(BaseOptions):
 
         self.parser.add_argument('--lr', type=float, default=5e-4, help='learning rate of training')
         self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
+        self.parser.add_argument('--weight_decay', type=float, default=1e-5, help='weight decay without BatchNorm')
 
         self.isTrain = True
+
+
+class TestOptions(BaseOptions):
+    def initialize(self):
+        BaseOptions.initialize(self)
+
+        self.parser.add_argument('--which_epoch', type=str, default='latest',
+                                 help='which epoch to load? set to latest to use latest cached model')
+
+        self.isTrain = False

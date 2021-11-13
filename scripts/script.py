@@ -25,6 +25,7 @@ if opt.train:
         --ngf 64 \
         --nlf 16 \
         --mesh_size 31 \
+        --balance_lambda 0.04 \
         --vgg_choose conv5_1 \
         --lr 0.0005 \
         --beta1 0.5 \

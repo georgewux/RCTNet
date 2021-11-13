@@ -15,6 +15,21 @@ def weights_init(m):
         torch.nn.init.constant_(m.bias.data, 0.0)
 
 
+def add_weight_decay(model, weight_decay=1e-5, skip_list=()):
+    decay = []
+    no_decay = []
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+        if len(param.shape) == 1 or name in skip_list:
+            no_decay.append(param)
+        else:
+            decay.append(param)
+    return [
+        {'params': no_decay, 'weight_decay': 0.},
+        {'params': decay, 'weight_decay': weight_decay}]
+
+
 def pad_tensor(input, divide):
     height_org, width_org = input.shape[2], input.shape[3]
 
@@ -69,39 +84,62 @@ def print_network(net):
 def define_encoder(opt, device):
     model = RCTEncoder(opt).to(device)
     model.apply(weights_init)
-    return model
+    params = add_weight_decay(model, opt.weight_decay)
+    return model, params
 
 
 def define_bifpn(opt, device):
     model = BiFPNBlock(opt).to(device)
     model.apply(weights_init)
-    return model
+    params = add_weight_decay(model, opt.weight_decay)
+    return model, params
 
 
 def define_G_rct(opt, device):
     model = GlobalRCT(opt).to(device)
     model.apply(weights_init)
-    return model
+    params = add_weight_decay(model, opt.weight_decay)
+    return model, params
 
 
 def define_L_rct(opt, device):
     model = LocalRCT(opt).to(device)
     model.apply(weights_init)
-    return model
+    params = add_weight_decay(model, opt.weight_decay)
+    return model, params
+
+
+def define_feature(opt, device):
+    model = RCTConvBlock(3, opt.represent_feature, 3, 1, 1, True).to(device)
+    model.apply(weights_init)
+    params = add_weight_decay(model, opt.weight_decay)
+    return model, params
 
 
 #################################################
 # Classes
 #################################################
 class RCTConvBlock(nn.Module):
-    def __init__(self, input_nc, output_nc, ksize=3, stride=2, pad=1):
+    def __init__(self, input_nc, output_nc, ksize=3, stride=2, pad=1, extra_conv=False):
         super(RCTConvBlock, self).__init__()
 
-        self.model = nn.Sequential(
-            nn.Conv2d(input_nc, output_nc, kernel_size=(ksize, ksize), stride=(stride, stride), padding=(pad, pad)),
-            nn.BatchNorm2d(output_nc),
-            nn.SiLU(inplace=True)  # Swish activation
-        )
+        lists = []
+
+        if extra_conv:
+            lists += [
+                nn.Conv2d(input_nc, input_nc, kernel_size=(ksize, ksize), stride=(stride, stride), padding=(pad, pad)),
+                nn.BatchNorm2d(input_nc),
+                nn.SiLU(inplace=True),  # Swish activation
+                nn.Conv2d(input_nc, output_nc, kernel_size=(ksize, ksize), stride=(stride, stride), padding=(pad, pad))
+            ]
+        else:
+            lists += [
+                nn.Conv2d(input_nc, output_nc, kernel_size=(ksize, ksize), stride=(stride, stride), padding=(pad, pad)),
+                nn.BatchNorm2d(output_nc),
+                nn.SiLU(inplace=True)
+            ]
+
+        self.model = nn.Sequential(*lists)
 
     def forward(self, x):
         return self.model(x)
@@ -133,14 +171,13 @@ class BiFPNBlock(nn.Module):
         # Init weights
         self.w1 = nn.Parameter(torch.Tensor(2, 3))
         self.w2 = nn.Parameter(torch.Tensor(3, 3))
-        self.relu = nn.ReLU()
 
     def forward(self, inputs):
         p4_x, p5_x, p6_x, p7_x = inputs
 
-        w1 = self.relu(self.w1)  # 保证w为非负
+        w1 = F.relu(self.w1)  # 保证w为非负
         w1 /= torch.sum(w1, dim=0) + self.epsilon
-        w2 = self.relu(self.w2)
+        w2 = F.relu(self.w2)
         w2 /= torch.sum(w2, dim=0) + self.epsilon
 
         # Calculate Top-Down Pathway
@@ -199,25 +236,21 @@ class GlobalRCT(nn.Module):
     def __init__(self, opt):
         super(GlobalRCT, self).__init__()
 
-        self.r_conv = nn.Sequential(
-            RCTConvBlock(opt.fusion_filter, opt.fusion_filter, 1, 1, 0),
-            nn.Conv2d(opt.fusion_filter, opt.represent_feature * opt.ngf, kernel_size=(1, 1))
-        )
-        self.t_conv = nn.Sequential(
-            RCTConvBlock(opt.fusion_filter, opt.fusion_filter, 1, 1, 0),
-            nn.Conv2d(opt.fusion_filter, 3 * opt.ngf, kernel_size=(1, 1))
-        )
+        self.opt = opt
+
+        self.r_conv = RCTConvBlock(opt.fusion_filter, opt.represent_feature * opt.ngf, 1, 1, 0, True)
+        self.t_conv = RCTConvBlock(opt.fusion_filter, 3 * opt.ngf, 1, 1, 0, True)
         self.act = nn.Softmax(dim=2)
 
     def forward(self, feature, p_high):
         h, w = feature.shape[2], feature.shape[3]
-        f_r = feature.reshape(feature.size(0), -1, opt.represent_feature)
+        f_r = feature.reshape(feature.size(0), -1, self.opt.represent_feature)
         r_g = self.r_conv(p_high)
-        r_g = r_g.reshape(r_g.size(0), opt.represent_feature, opt.ngf)
+        r_g = r_g.reshape(r_g.size(0), self.opt.represent_feature, self.opt.ngf)
         t_g = self.t_conv(p_high)
-        t_g = t_g.reshape(t_g.size(0), 3, opt.ngf)
+        t_g = t_g.reshape(t_g.size(0), 3, self.opt.ngf)
 
-        attention = torch.bmm(f_r, r_g) / torch.sqrt(torch.tensor(opt.represent_feature))
+        attention = torch.bmm(f_r, r_g) / torch.sqrt(torch.tensor(self.opt.represent_feature))
         attention = self.act(attention)
         Y_G = torch.bmm(attention, t_g.transpose(1, 2))
         Y_G = Y_G.transpose(1, 2)
@@ -230,14 +263,8 @@ class LocalRCT(nn.Module):
 
         self.opt =opt
 
-        self.r_conv = nn.Sequential(
-            RCTConvBlock(opt.fusion_filter, opt.fusion_filter, 3, 1, 1),
-            nn.Conv2d(opt.fusion_filter, opt.represent_feature * opt.nlf, kernel_size=(3, 3), padding=(1, 1))
-        )
-        self.t_conv = nn.Sequential(
-            RCTConvBlock(opt.fusion_filter, opt.fusion_filter, 3, 1, 1),
-            nn.Conv2d(opt.fusion_filter, 3 * opt.nlf, kernel_size=(3, 3), padding=(1, 1))
-        )
+        self.r_conv = RCTConvBlock(opt.fusion_filter, opt.represent_feature * opt.nlf, 3, 1, 1, True)
+        self.t_conv = RCTConvBlock(opt.fusion_filter, 3 * opt.nlf, 3, 1, 1, True)
         self.act = nn.Softmax(dim=2)
 
     def forward(self, feature, p_low):
@@ -247,7 +274,7 @@ class LocalRCT(nn.Module):
 
         r_l = self.r_conv(p_low)
         t_l = self.t_conv(p_low)
-        Y_L = torch.zeros(nfeature.size(0), 3, nfeature.size(2), nfeature.size(3))
+        Y_L = torch.zeros(nfeature.size(0), 3, nfeature.size(2), nfeature.size(3), device=feature.device)
 
         # Grid-wise
         for i in range(self.opt.mesh_size):
@@ -270,15 +297,25 @@ class LocalRCT(nn.Module):
                 t_k = torch.cat((t_k, cp), dim=2)
 
                 f_k = nfeature[:, :, i*mesh_h:(i+1)*mesh_h, j*mesh_w:(j+1)*mesh_w]
-                f_k = f_k.reshape(feature.size(0), -1, opt.represent_feature)
+                f_k = f_k.reshape(feature.size(0), -1, self.opt.represent_feature)
 
-                attention = torch.bmm(f_k, r_k) / torch.sqrt(torch.tensor(opt.represent_feature))
+                attention = torch.bmm(f_k, r_k) / torch.sqrt(torch.tensor(self.opt.represent_feature))
                 attention = self.act(attention)
                 mesh = torch.bmm(attention, t_k.transpose(1, 2))
                 mesh = mesh.transpose(1, 2)
                 Y_L[:, :, i * mesh_h:(i + 1) * mesh_h, j * mesh_w:(j + 1) * mesh_w] = mesh.reshape(mesh.size(0), 3, mesh_h, mesh_w)
 
         return pad_tensor_back(Y_L, pad_left, pad_right, pad_top, pad_bottom)
+
+
+class Fusion(nn.Module):
+    def __init__(self):
+        super(Fusion, self).__init__()
+
+        self.w = nn.Parameter(torch.Tensor(2))
+
+    def forward(self, g, l):
+        return F.relu(self.w[0] * g + self.w[1] * l)
 
 
 class Vgg16(nn.Module):
@@ -345,24 +382,31 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     x = torch.randn(8, 3, 256, 256).to(device)
-    fea = torch.randn(8, 16, 400, 600).to(device)
+    x_org = torch.randn(8, 3, 400, 600).to(device)
 
     from options import TrainOptions
     opt = TrainOptions().parse()
 
-    encoder = define_encoder(opt, device)
-    bifpn = define_bifpn(opt, device)
-    global_rct = define_G_rct(opt, device)
-    local_rct = define_L_rct(opt, device)
+    encoder, _ = define_encoder(opt, device)
+    bifpn, _ = define_bifpn(opt, device)
+    global_rct, _ = define_G_rct(opt, device)
+    local_rct, _ = define_L_rct(opt, device)
+    fea, _ = define_feature(opt, device)
+    fusion = Fusion()
+    fusion = fusion.to(device)
 
+    f = fea(x_org)
     features = encoder(x)
     # print(features[1].shape)
 
     fusion_features = bifpn(features)
     # print(fusion_features[0].shape)
 
-    Y_G = global_rct(fea, fusion_features[3])
-    print(Y_G.shape)
+    Y_G = global_rct(f, fusion_features[3])
+    print(Y_G.device)
 
-    Y_L = local_rct(fea, fusion_features[0])
-    print(Y_L.shape)
+    Y_L = local_rct(f, fusion_features[0])
+    print(Y_L.device)
+
+    Y = fusion(Y_G, Y_L)
+    print(Y.shape)
