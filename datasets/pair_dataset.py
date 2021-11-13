@@ -2,6 +2,7 @@ import os
 import cv2
 import random
 import numpy as np
+import torchvision.transforms
 from PIL import Image
 from torch.utils.data import Dataset
 import albumentations as alb
@@ -94,25 +95,35 @@ class PairDataset(Dataset):
         A_path = self.A_paths[idx % self.A_size]
         B_path = self.B_paths[idx % self.B_size]
 
+        AtoB = self.opt.which_direction == 'AtoB'
+
+        transform = torchvision.transforms.Compose([
+            torchvision.transforms.ToTensor,
+            torchvision.transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+
+        if AtoB:
+            org_img = transform(A_img)
+        else:
+            org_img = transform(B_img)
+
         # 同步增强一对图像
         transform = get_transform(self.opt)
         augmentations = transform(image=A_img, image0=B_img)
         A_img = augmentations["image"]
         B_img = augmentations["image0"]
 
-        AtoB = self.opt.which_direction == 'AtoB'
-        if AtoB:
-            input_img = A_img
-        else:
-            input_img = B_img
-
         # 对输入图像单独增强(颜色抖动)
         if self.opt.color_jitter and random.random() < 0.5:
             times = random.randint(200, 400) / 100.
-            input_img = (input_img + 1) / 2. / times
-            input_img = input_img * 2 - 1
+            if AtoB:
+                A_img = (A_img + 1) / 2. / times
+                A_img = A_img * 2 - 1
+            else:
+                B_img = (B_img + 1) / 2. / times
+                B_img = B_img * 2 - 1
 
-        return {'A': A_img, 'B': B_img, 'input': input_img, 'A_paths': A_path, 'B_paths': B_path}
+        return {'A': A_img, 'B': B_img, 'input': org_img, 'A_paths': A_path, 'B_paths': B_path}
 
     @staticmethod
     def name():
