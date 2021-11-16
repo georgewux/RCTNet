@@ -34,11 +34,27 @@ def main():
     model = create_model(opt)
     visualizer = Visualizer(opt)
 
-    for epoch in range(1):
+    total_steps = 0
+
+    for epoch in range(1, opt.num_epoch):
         epoch_start_time = time.time()
         for i, data in enumerate(dataset):
             iter_start_time = time.time()
+            total_steps += opt.batch_size
+            epoch_iter = total_steps - dataset_size * (epoch - 1)
             model.set_input(data)
+            model.optimize_parameters()
+
+            if total_steps % opt.display_freq == 0:
+                visualizer.display_current_results(model.get_current_visuals(), epoch)
+
+            if total_steps % opt.print_freq == 0:
+                errors = model.get_current_errors(epoch)
+                t = (time.time() - iter_start_time) / opt.batch_size
+                visualizer.print_current_errors(epoch, epoch_iter, errors, t)
+                if opt.display_id > 0:
+                    visualizer.plot_current_errors(epoch, float(epoch_iter) / dataset_size, opt, errors)
+        model.update_learning_rate()
 
 
 if __name__ == '__main__':

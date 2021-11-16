@@ -1,15 +1,15 @@
 import os
 import torch
 from torch import nn
-from networks import Vgg16
+from models.networks import Vgg16
 
 
-def load_vgg16(model_dir):
+def load_vgg16(model_dir, device):
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
     vgg = Vgg16()
-    vgg.cuda()
+    vgg.to(device)
     vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
 
     return vgg

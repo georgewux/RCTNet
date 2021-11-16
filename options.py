@@ -86,10 +86,15 @@ class TrainOptions(BaseOptions):
 
         self.parser.add_argument('--no_html', action='store_true',
                                  help='do not save intermediate training results to [checkpoints_dir]/[name]/web/')
+        self.parser.add_argument('--display_freq', type=int, default=30,
+                                 help='frequency of showing training results on screen')
+        self.parser.add_argument('--print_freq', type=int, default=100,
+                                 help='frequency of showing training results on console')
 
         self.parser.add_argument('--lr', type=float, default=5e-4, help='learning rate of training')
         self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
         self.parser.add_argument('--weight_decay', type=float, default=1e-5, help='weight decay without BatchNorm')
+        self.parser.add_argument('--num_epoch', type=int, default=100, help='number of epoch during training')
 
         self.isTrain = True
 

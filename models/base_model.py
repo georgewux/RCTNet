@@ -30,8 +30,8 @@ class BaseModel(object):
     def get_current_visuals(self):
         pass
 
-    def get_current_errors(self):
-        return {}
+    def get_current_errors(self, epoch):
+        pass
 
     def save(self, label):
         pass
