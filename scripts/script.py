@@ -19,7 +19,7 @@ if opt.train:
         --resize_or_crop resize \
         --fine_size 256 \
         --scale_width 512 \
-        --number_filter 16 \
+        --num_filter 16 \
         --fusion_filter 128 \
         --represent_feature 16 \
         --ngf 64 \
@@ -29,4 +29,6 @@ if opt.train:
         --vgg_choose conv5_1 \
         --lr 0.0005 \
         --beta1 0.5 \
+        --weight_decay 0.00001 \
+        --num_epoch 500 \
         --display_port=" + opt.port)

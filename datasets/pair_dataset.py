@@ -2,7 +2,6 @@ import os
 import cv2
 import random
 import numpy as np
-import torchvision.transforms
 from PIL import Image
 from torch.utils.data import Dataset
 import albumentations as alb
@@ -97,15 +96,17 @@ class PairDataset(Dataset):
 
         AtoB = self.opt.which_direction == 'AtoB'
 
-        transform = torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor,
-            torchvision.transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        pre_transform = alb.Compose([
+            alb.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+            ToTensorV2()
         ])
 
         if AtoB:
-            org_img = transform(A_img)
+            aug = pre_transform(image=A_img)
+            org_img = aug['image']
         else:
-            org_img = transform(B_img)
+            aug = pre_transform(image=B_img)
+            org_img = aug['image']
 
         # 同步增强一对图像
         transform = get_transform(self.opt)

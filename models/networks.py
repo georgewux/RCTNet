@@ -81,36 +81,8 @@ def print_network(net):
     print('Total number of parameters: %d' % num_params)
 
 
-def define_encoder(opt, device):
-    model = RCTEncoder(opt).to(device)
-    model.apply(weights_init)
-    params = add_weight_decay(model, opt.weight_decay)
-    return model, params
-
-
-def define_bifpn(opt, device):
-    model = BiFPNBlock(opt).to(device)
-    model.apply(weights_init)
-    params = add_weight_decay(model, opt.weight_decay)
-    return model, params
-
-
-def define_G_rct(opt, device):
-    model = GlobalRCT(opt).to(device)
-    model.apply(weights_init)
-    params = add_weight_decay(model, opt.weight_decay)
-    return model, params
-
-
-def define_L_rct(opt, device):
-    model = LocalRCT(opt).to(device)
-    model.apply(weights_init)
-    params = add_weight_decay(model, opt.weight_decay)
-    return model, params
-
-
-def define_feature(opt, device):
-    model = RCTConvBlock(3, opt.represent_feature, 3, 1, 1, True).to(device)
+def define_fusion(opt, device):
+    model = Fusion(opt).to(device)
     model.apply(weights_init)
     params = add_weight_decay(model, opt.weight_decay)
     return model, params
@@ -169,8 +141,8 @@ class BiFPNBlock(nn.Module):
         self.down7 = nn.Sequential(*down_list)
 
         # Init weights
-        self.w1 = nn.Parameter(torch.Tensor(2, 3))
-        self.w2 = nn.Parameter(torch.Tensor(3, 3))
+        self.w1 = nn.Parameter(torch.ones((2, 3), dtype=torch.float32))
+        self.w2 = nn.Parameter(torch.ones((3, 3), dtype=torch.float32))
 
     def forward(self, inputs):
         p4_x, p5_x, p6_x, p7_x = inputs
@@ -182,7 +154,6 @@ class BiFPNBlock(nn.Module):
 
         # Calculate Top-Down Pathway
         p7_td = p7_x
-        # print(p6_x.shape)
         p6_td = self.p6_td(w1[0, 0] * p6_x + w1[1, 0] * F.interpolate(p7_td, scale_factor=8))
         p5_td = self.p5_td(w1[0, 1] * p5_x + w1[1, 1] * F.interpolate(p6_td, scale_factor=2))
         p4_td = self.p4_td(w1[0, 2] * p4_x + w1[1, 2] * F.interpolate(p5_td, scale_factor=2))
@@ -220,14 +191,10 @@ class RCTEncoder(nn.Module):
         self.p7 = RCTConvBlock(1024, opt.fusion_filter, 1, 1, 0)
 
     def forward(self, x):
-        c4 = self.init(x)
-        p4_x = self.p4(c4)
-        c5 = self.bottom(c4)
-        p5_x = self.p5(c5)
-        c6 = self.middle(c5)
-        p6_x = self.p6(c6)
-        c7 = self.top(c6)
-        p7_x = self.p7(c7)
+        p4_x = self.p4(self.init(x))
+        p5_x = self.p5(self.bottom(self.init(x)))
+        p6_x = self.p6(self.middle(self.bottom(self.init(x))))
+        p7_x = self.p7(self.top(self.middle(self.bottom(self.init(x)))))
 
         return [p4_x, p5_x, p6_x, p7_x]
 
@@ -309,13 +276,20 @@ class LocalRCT(nn.Module):
 
 
 class Fusion(nn.Module):
-    def __init__(self):
+    def __init__(self, opt):
         super(Fusion, self).__init__()
 
-        self.w = nn.Parameter(torch.Tensor(2))
+        self.w = nn.Parameter(torch.ones(2, dtype=torch.float32)) / 2.
+        self.encoder = RCTEncoder(opt)
+        self.bifpn = BiFPNBlock(opt)
+        self.global_rct = GlobalRCT(opt)
+        self.local_rct = LocalRCT(opt)
+        self.extract_f = RCTConvBlock(3, opt.represent_feature, 3, 1, 1, True)
 
-    def forward(self, g, l):
-        return F.relu(self.w[0] * g + self.w[1] * l)
+    def forward(self, org_img, img):
+        feature = self.extract_f(org_img)
+        p_list = self.bifpn(self.encoder(img))
+        return F.relu(self.w[0]) * self.global_rct(feature, p_list[3]) + F.relu(self.w[1]) * self.local_rct(feature, p_list[0])
 
 
 class Vgg16(nn.Module):
@@ -387,26 +361,7 @@ if __name__ == '__main__':
     from options import TrainOptions
     opt = TrainOptions().parse()
 
-    encoder, _ = define_encoder(opt, device)
-    bifpn, _ = define_bifpn(opt, device)
-    global_rct, _ = define_G_rct(opt, device)
-    local_rct, _ = define_L_rct(opt, device)
-    fea, _ = define_feature(opt, device)
-    fusion = Fusion()
-    fusion = fusion.to(device)
+    fusion, _ = define_fusion(opt, device)
 
-    f = fea(x_org)
-    features = encoder(x)
-    # print(features[1].shape)
-
-    fusion_features = bifpn(features)
-    # print(fusion_features[0].shape)
-
-    Y_G = global_rct(f, fusion_features[3])
-    print(Y_G.device)
-
-    Y_L = local_rct(f, fusion_features[0])
-    print(Y_L.device)
-
-    Y = fusion(Y_G, Y_L)
+    Y = fusion(x_org, x)
     print(Y.shape)

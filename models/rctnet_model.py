@@ -1,9 +1,10 @@
-import os
 import torch
 from torch import nn
-import networks  # 调试完改为from ... import
-import loss_function as Loss  # 同上
+from utils import util
+from models import networks  # 调试完改为from ... import
+from models import loss_function as Loss  # 同上
 from models.base_model import BaseModel
+from collections import OrderedDict
 
 
 class RCTNet(BaseModel):
@@ -26,62 +27,33 @@ class RCTNet(BaseModel):
         self.l1_criterion.to(self.device)
         self.vgg_criterion = Loss.PerceptualLoss(opt)
         self.vgg_criterion.to(self.device)
-        self.vgg = Loss.load_vgg16("./")
+        self.vgg = Loss.load_vgg16("./", self.device)
         self.vgg.eval()
         for param in self.vgg.parameters():
             param.requires_grad = False
-        self.l1_loss = 0
-        self.vgg_loss = 0
-        self.loss = 0
 
         # Definition of Network
-        self.encoder, param = networks.define_encoder(self.opt, self.device)
+        self.fusion, param = networks.define_fusion(self.opt, self.device)
         self.params = param
-        self.bifpn, param = networks.define_bifpn(self.opt, self.device)
-        self.params += param
-        self.global_rct, param = networks.define_G_rct(self.opt, self.device)
-        self.params += param
-        self.local_rct, param = networks.define_L_rct(self.opt, self.device)
-        self.params += param
-        self.extract_f, param = networks.define_feature(self.opt, self.device)
-        self.params += param
-        self.fusion = networks.Fusion().to(self.device)
-        self.params += [{'params': list(self.fusion.parameters())}]
+        # print(self.params)
 
         if self.isTrain:
             self.optimizer = torch.optim.Adam(
                 self.params,
                 lr=self.opt.lr,
-                betas=(self.opt.beta1, 0.999),
-                weight_decay=1e-5
+                betas=(self.opt.beta1, 0.999)
             )
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=10)
 
-            self.encoder.train()
-            self.bifpn.train()
-            self.global_rct.train()
-            self.local_rct.train()
-            self.extract_f.train()
+            self.fusion.train()
         else:
             which_epoch = self.opt.which_epoch
-            self.load_network(self.encoder, 'E', which_epoch)
-            self.load_network(self.bifpn, 'B', which_epoch)
-            self.load_network(self.global_rct, 'G', which_epoch)
-            self.load_network(self.local_rct, 'L', which_epoch)
-            self.load_network(self.extract_f, 'F', which_epoch)
+            self.load_network(self.fusion, 'F', which_epoch)
 
-            self.encoder.eval()
-            self.bifpn.eval()
-            self.global_rct.eval()
-            self.local_rct.eval()
-            self.extract_f.eval()
+            self.fusion.eval()
 
         print('---------- Networks initialized -------------')
-        networks.print_network(self.encoder)
-        networks.print_network(self.bifpn)
-        networks.print_network(self.global_rct)
-        networks.print_network(self.local_rct)
-        networks.print_network(self.extract_f)
+        networks.print_network(self.fusion)
         print('-----------------------------------------------')
 
     def set_input(self, data):
@@ -99,32 +71,41 @@ class RCTNet(BaseModel):
         return self.img_paths
 
     def forward(self):
-        org_feature = self.extract_f(self.input_img)
-        features = self.encoder(self.input_A)
-        fusion_features = self.bifpn(features)
+        self.Y = self.fusion(self.input_img, self.input_A)
 
-        Y_G = self.global_rct(org_feature, fusion_features[3])
-        Y_L = self.local_rct(org_feature, fusion_features[0])
-
-        return self.fusion(Y_G, Y_L)
-
-    def _backward(self):
-        Y = self.forward()
-
-        self.l1_loss = self.l1_criterion(Y, self.input_img)
-        self.vgg_loss = self.vgg_criterion.compute_vgg_loss(self.vgg, Y, self.input_img)
+    def backward(self):
+        self.l1_loss = self.l1_criterion(self.Y, self.input_img)
+        self.vgg_loss = self.vgg_criterion.compute_vgg_loss(self.vgg, self.Y, self.input_img)
         self.loss = self.l1_loss + self.opt.balance_lambda * self.vgg_loss
 
         self.loss.backward()
 
     def optimize_parameters(self):
+        self.forward()
         self.optimizer.zero_grad()
-        self._backward()
+        self.backward()
         self.optimizer.step()
+
+    def get_current_visuals(self):
+        real_input = util.tensor2im(self.input_img.data)
+        real_B = util.tensor2im(self.input_B.data)
+        enhance_B = util.tensor2im(self.Y.data)
+        return OrderedDict([('real_input', real_input), ('real_B', real_B), ('enhance_B', enhance_B)])
+
+    def get_current_errors(self, epoch):
+        l1 = self.l1_loss.item()
+        vgg = self.vgg_loss.item()
+        return OrderedDict([('l1', l1), ("vgg", vgg)])
+
+    def save(self, label):
+        self.save_network(self.fusion, 'F', label, self.device)
+
+    def update_learning_rate(self):
+        self.scheduler.step()
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
 
     a = torch.randn(8, 3, 256, 256).to(device)
     b = torch.randn(8, 3, 256, 256).to(device)
@@ -140,9 +121,5 @@ if __name__ == '__main__':
 
     model.set_input(img_group)
 
-    # f = model.forward()
-    # print(f.shape)
-
     model.optimize_parameters()
 
-    pass
