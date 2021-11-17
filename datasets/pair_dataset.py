@@ -99,14 +99,16 @@ class PairDataset(Dataset):
         pre_transform = alb.Compose([
             alb.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
             ToTensorV2()
-        ])
+        ], additional_targets={"image0": "image"})
 
         if AtoB:
-            aug = pre_transform(image=A_img)
+            aug = pre_transform(image=A_img,image0=B_img)
             org_img = aug['image']
+            target_img = aug['image0']
         else:
             aug = pre_transform(image=B_img)
             org_img = aug['image']
+            target_img = aug['image0']
 
         # 同步增强一对图像
         transform = get_transform(self.opt)
@@ -124,7 +126,7 @@ class PairDataset(Dataset):
                 B_img = (B_img + 1) / 2. / times
                 B_img = B_img * 2 - 1
 
-        return {'A': A_img, 'B': B_img, 'input': org_img, 'A_paths': A_path, 'B_paths': B_path}
+        return {'A': A_img, 'B': B_img, 'input': org_img, 'target': target_img, 'A_paths': A_path, 'B_paths': B_path}
 
     @staticmethod
     def name():

@@ -20,6 +20,7 @@ class RCTNet(BaseModel):
         self.input_A = torch.zeros([opt.batch_size, 3, opt.fine_size, opt.fine_size], device=self.device)
         self.input_B = torch.zeros([opt.batch_size, 3, opt.fine_size, opt.fine_size], device=self.device)
         self.input_img = torch.zeros([opt.batch_size, 3, opt.fine_size, opt.fine_size], device=self.device)
+        self.target_img = torch.zeros([opt.batch_size, 3, opt.fine_size, opt.fine_size], device=self.device)
         self.img_paths = []
 
         # Definition of loss function
@@ -27,7 +28,7 @@ class RCTNet(BaseModel):
         self.l1_criterion.to(self.device)
         self.vgg_criterion = Loss.PerceptualLoss(opt)
         self.vgg_criterion.to(self.device)
-        self.vgg = Loss.load_vgg16("./", self.device)
+        self.vgg = Loss.load_vgg16("./models", self.device)
         self.vgg.eval()
         for param in self.vgg.parameters():
             param.requires_grad = False
@@ -61,9 +62,12 @@ class RCTNet(BaseModel):
         input_A = data['A' if AtoB else 'B']
         input_B = data['B' if AtoB else 'A']
         input_img = data['input']
+        target_img = data['target']
+
         self.input_A.resize_(input_A.size()).copy_(input_A)
         self.input_B.resize_(input_B.size()).copy_(input_B)
         self.input_img.resize_(input_img.size()).copy_(input_img)
+        self.target_img.resize_(target_img.size()).copy_(target_img)
         self.img_paths = data['A_paths' if AtoB else 'B_paths']
 
     # get image paths
@@ -74,11 +78,11 @@ class RCTNet(BaseModel):
         self.Y = self.fusion(self.input_img, self.input_A)
 
     def backward(self):
-        self.l1_loss = self.l1_criterion(self.Y, self.input_img)
-        self.vgg_loss = self.vgg_criterion.compute_vgg_loss(self.vgg, self.Y, self.input_img)
+        self.l1_loss = self.l1_criterion(self.Y, self.target_img)
+        self.vgg_loss = self.vgg_criterion.compute_vgg_loss(self.vgg, self.Y, self.target_img)
         self.loss = self.l1_loss + self.opt.balance_lambda * self.vgg_loss
 
-        self.loss.backward()
+        self.loss.backward(retain_graph=True)
 
     def optimize_parameters(self):
         self.forward()
@@ -87,10 +91,10 @@ class RCTNet(BaseModel):
         self.optimizer.step()
 
     def get_current_visuals(self):
-        real_input = util.tensor2im(self.input_img.data)
-        real_B = util.tensor2im(self.input_B.data)
-        enhance_B = util.tensor2im(self.Y.data)
-        return OrderedDict([('real_input', real_input), ('real_B', real_B), ('enhance_B', enhance_B)])
+        input_img = util.tensor2im(self.input_img.data)
+        target_img = util.tensor2im(self.target_img.data)
+        enhanced_img = util.tensor2im(self.Y.data)
+        return OrderedDict([('input_img', input_img), ('target_img', target_img), ('enhanced_img', enhanced_img)])
 
     def get_current_errors(self, epoch):
         l1 = self.l1_loss.item()
