@@ -14,7 +14,7 @@ if opt.train:
         --data_root ./datasets/LoL/train \
         --dataset_mode pair \
         --which_direction AtoB \
-        --batch_size 3 \
+        --batch_size 8 \
         --num_workers 4 \
         --resize_or_crop resize \
         --fine_size 256 \

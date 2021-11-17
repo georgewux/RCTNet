@@ -228,7 +228,7 @@ class LocalRCT(nn.Module):
     def __init__(self, opt):
         super(LocalRCT, self).__init__()
 
-        self.opt =opt
+        self.opt = opt
 
         self.r_conv = RCTConvBlock(opt.fusion_filter, opt.represent_feature * opt.nlf, 3, 1, 1, True)
         self.t_conv = RCTConvBlock(opt.fusion_filter, 3 * opt.nlf, 3, 1, 1, True)
@@ -263,14 +263,15 @@ class LocalRCT(nn.Module):
                 cp = t_l[:, :, i + 1, j + 1].reshape(-1, 3, self.opt.nlf)
                 t_k = torch.cat((t_k, cp), dim=2)
 
-                f_k = nfeature[:, :, i*mesh_h:(i+1)*mesh_h, j*mesh_w:(j+1)*mesh_w]
+                f_k = nfeature[:, :, i * mesh_h:(i + 1) * mesh_h, j * mesh_w:(j + 1) * mesh_w]
                 f_k = f_k.reshape(feature.size(0), -1, self.opt.represent_feature)
 
                 attention = torch.bmm(f_k, r_k) / torch.sqrt(torch.tensor(self.opt.represent_feature))
                 attention = self.act(attention)
                 mesh = torch.bmm(attention, t_k.transpose(1, 2))
                 mesh = mesh.transpose(1, 2)
-                Y_L[:, :, i * mesh_h:(i + 1) * mesh_h, j * mesh_w:(j + 1) * mesh_w] = mesh.reshape(mesh.size(0), 3, mesh_h, mesh_w)
+                Y_L[:, :, i * mesh_h:(i + 1) * mesh_h, j * mesh_w:(j + 1) * mesh_w] = mesh.reshape(mesh.size(0), 3,
+                                                                                                   mesh_h, mesh_w)
 
         return pad_tensor_back(Y_L, pad_left, pad_right, pad_top, pad_bottom)
 
@@ -279,7 +280,7 @@ class Fusion(nn.Module):
     def __init__(self, opt):
         super(Fusion, self).__init__()
 
-        self.w = nn.Parameter(torch.tensor([0.1, 0.3], dtype=torch.float32))
+        self.w = nn.Parameter(torch.tensor([0.6, 0.1], dtype=torch.float32))
         self.encoder = RCTEncoder(opt)
         self.bifpn = BiFPNBlock(opt)
         self.global_rct = GlobalRCT(opt)
@@ -289,7 +290,8 @@ class Fusion(nn.Module):
     def forward(self, org_img, img):
         feature = self.extract_f(org_img)
         p_list = self.bifpn(self.encoder(img))
-        return F.relu(self.w[0]) * self.global_rct(feature, p_list[3]) + F.relu(self.w[1]) * self.local_rct(feature, p_list[0])
+        return F.relu(self.w[0], True) * self.global_rct(feature, p_list[3]) + F.relu(self.w[1], True) * self.local_rct(
+            feature, p_list[0])
 
 
 class Vgg16(nn.Module):
@@ -360,6 +362,7 @@ if __name__ == '__main__':
     x_tar = torch.randn(8, 3, 400, 600).to(device)
 
     from options import TrainOptions
+
     opt = TrainOptions().parse()
 
     fusion, _ = define_fusion(opt, device)
