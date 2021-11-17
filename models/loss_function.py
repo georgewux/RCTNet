@@ -47,6 +47,8 @@ class PerceptualLoss(nn.Module):
 
 
 if __name__ == '__main__':
+    device = torch.device('cuda')
+
     x = torch.randn(1, 3, 512, 512).cuda()
     y = torch.randn(1, 3, 512, 512).cuda()
 
@@ -55,7 +57,7 @@ if __name__ == '__main__':
     opt.no_vgg_instance = True
     criterion = PerceptualLoss(opt)
 
-    vgg = load_vgg16('./')
+    vgg = load_vgg16('./', device)
 
     dis = criterion.compute_vgg_loss(vgg, x, y)
 

@@ -279,7 +279,7 @@ class Fusion(nn.Module):
     def __init__(self, opt):
         super(Fusion, self).__init__()
 
-        self.w = nn.Parameter(torch.ones(2, dtype=torch.float32)) / 2.
+        self.w = nn.Parameter(torch.tensor([0.1, 0.3], dtype=torch.float32))
         self.encoder = RCTEncoder(opt)
         self.bifpn = BiFPNBlock(opt)
         self.global_rct = GlobalRCT(opt)
@@ -357,6 +357,7 @@ if __name__ == '__main__':
 
     x = torch.randn(8, 3, 256, 256).to(device)
     x_org = torch.randn(8, 3, 400, 600).to(device)
+    x_tar = torch.randn(8, 3, 400, 600).to(device)
 
     from options import TrainOptions
     opt = TrainOptions().parse()
@@ -365,3 +366,7 @@ if __name__ == '__main__':
 
     Y = fusion(x_org, x)
     print(Y.shape)
+
+    criterion = nn.L1Loss()
+    loss = criterion(Y, x_tar)
+    loss.backward()

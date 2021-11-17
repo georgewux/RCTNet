@@ -19,9 +19,6 @@ def create_model(opt):
 
 
 def main():
-    # Device configuration
-    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
     # Parameters Configuration
     opt = TrainOptions().parse()
 
@@ -55,6 +52,13 @@ def main():
                 if opt.display_id > 0:
                     visualizer.plot_current_errors(epoch, float(epoch_iter) / dataset_size, opt, errors)
         model.update_learning_rate()
+        if epoch % opt.save_epoch_freq == 0:
+            print('saving the model at the end of epoch %d, iters %d' %
+                  (epoch, total_steps))
+            model.save('latest')
+            model.save(epoch)
+        print('End of epoch %d / %d \t Time Taken: %d sec' %
+              (epoch, opt.num_epoch, time.time() - epoch_start_time))
 
 
 if __name__ == '__main__':

@@ -61,12 +61,12 @@ def get_transform(opt):
         transform_list.append(alb.Lambda(image=lambda img, **kwargs: __scale_width(img, target_width=opt.scale_width)))
         transform_list.append(alb.RandomCrop(opt.fine_size, opt.fine_size))
 
-    if opt.isTrain and not opt.no_flip:
-        transform_list.append(alb.Flip(p=0.5))
+    if opt.isTrain and opt.color_jitter:
+        transform_list.append(alb.ColorJitter(brightness=0.2, p=0.5))
 
     transform_list += [alb.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
                        ToTensorV2()]
-    transform = alb.Compose(transform_list, additional_targets={"image0": "image"})
+    transform = alb.Compose(transform_list)
     return transform
 
 
@@ -94,37 +94,36 @@ class PairDataset(Dataset):
         A_path = self.A_paths[idx % self.A_size]
         B_path = self.B_paths[idx % self.B_size]
 
+        if self.opt.isTrain and not self.opt.no_flip:
+            flip_transform = alb.Compose([alb.Flip(p=0.5)], additional_targets={"image0": "image"})
+            ft_aug = flip_transform(image=A_img, image0=B_img)
+            A_img = ft_aug['image']
+            B_img = ft_aug['image0']
+
         AtoB = self.opt.which_direction == 'AtoB'
 
         pre_transform = alb.Compose([
             alb.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
             ToTensorV2()
-        ])
+        ], additional_targets={"image0": "image"})
+        transform = get_transform(self.opt)
 
         if AtoB:
-            aug = pre_transform(image=A_img)
+            aug = pre_transform(image=A_img, image0=B_img)
             org_img = aug['image']
+            target_img = aug['image0']
+
+            augmentations = transform(image=A_img)
+            A_img = augmentations["image"]
         else:
-            aug = pre_transform(image=B_img)
+            aug = pre_transform(image=B_img, image0=A_img)
             org_img = aug['image']
+            target_img = aug['image0']
 
-        # 同步增强一对图像
-        transform = get_transform(self.opt)
-        augmentations = transform(image=A_img, image0=B_img)
-        A_img = augmentations["image"]
-        B_img = augmentations["image0"]
+            augmentations = transform(image=B_img)
+            A_img = augmentations["image"]
 
-        # 对输入图像单独增强(颜色抖动)
-        if self.opt.color_jitter and random.random() < 0.5:
-            times = random.randint(200, 400) / 100.
-            if AtoB:
-                A_img = (A_img + 1) / 2. / times
-                A_img = A_img * 2 - 1
-            else:
-                B_img = (B_img + 1) / 2. / times
-                B_img = B_img * 2 - 1
-
-        return {'A': A_img, 'B': B_img, 'input': org_img, 'A_paths': A_path, 'B_paths': B_path}
+        return {'A': A_img, 'input': org_img, 'target': target_img, 'A_paths': A_path, 'B_paths': B_path}
 
     @staticmethod
     def name():
@@ -142,8 +141,8 @@ if __name__ == '__main__':
     dataset = PairDataset(opt)
 
     for i, data in enumerate(dataset):
-        imgA = data['A']
-        imgB = data['B']
+        imgA = data['input']
+        imgB = data['target']
         imgA = imgA.numpy()
         imgB = imgB.numpy()
         img = np.concatenate([imgA, imgB], axis=2)
