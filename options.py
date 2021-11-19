@@ -44,7 +44,6 @@ class BaseOptions(object):
         # perceptual loss from vgg
         self.parser.add_argument('--no_vgg_instance', action='store_true', help='vgg instance normalization')
         self.parser.add_argument('--vgg_mean', action='store_true', help='substract mean in vgg loss')
-        self.parser.add_argument('--vgg_choose', type=str, default='conv5_3', help='choose layer for vgg')
 
         # Visualization
         self.parser.add_argument('--display_id', type=int, default=1, help='window id of the web display')

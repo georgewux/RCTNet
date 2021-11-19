@@ -1,6 +1,7 @@
 import os
 import torch
 from torch import nn
+import torch.nn.functional as F
 from models.networks import Vgg16
 
 
@@ -33,17 +34,15 @@ class PerceptualLoss(nn.Module):
     def __init__(self, opt):
         super(PerceptualLoss, self).__init__()
         self.opt = opt
-        self.instancenorm = nn.InstanceNorm2d(512, affine=False)
 
     def compute_vgg_loss(self, vgg, img, target):
         img_vgg = vgg_preprocess(img, self.opt)
         target_vgg = vgg_preprocess(target, self.opt)
         img_fea = vgg(img_vgg, self.opt)
         target_fea = vgg(target_vgg, self.opt)
-        if self.opt.no_vgg_instance:
-            return torch.mean((img_fea - target_fea) ** 2)
-        else:
-            return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
+
+        return F.l1_loss(img_fea['conv2'], target_fea['conv2']) + F.l1_loss(
+            img_fea['conv4'], target_fea['conv4']) + F.l1_loss(img_fea['conv6'], target_fea['conv6'])
 
 
 if __name__ == '__main__':

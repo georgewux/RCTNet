@@ -79,7 +79,8 @@ class RCTNet(BaseModel):
         self.vgg_loss = self.vgg_criterion.compute_vgg_loss(self.vgg, self.Y, self.target_img)
         self.loss = self.l1_loss + self.opt.balance_lambda * self.vgg_loss
 
-        self.loss.backward(retain_graph=True)
+        # self.loss.backward(retain_graph=True)
+        self.loss.backward()
 
     def optimize_parameters(self):
         self.forward()
@@ -95,7 +96,7 @@ class RCTNet(BaseModel):
 
     def get_current_errors(self, epoch):
         l1 = self.l1_loss.item()
-        vgg = self.vgg_loss.item()
+        vgg = self.opt.balance_lambda * self.vgg_loss.item()
         return OrderedDict([('l1', l1), ("vgg", vgg)])
 
     def save(self, label):

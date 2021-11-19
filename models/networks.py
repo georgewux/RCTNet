@@ -318,40 +318,17 @@ class Vgg16(nn.Module):
 
     def forward(self, X, opt):
         h = F.relu(self.conv1_1(X), inplace=True)
-        h = F.relu(self.conv1_2(h), inplace=True)
-        h = F.max_pool2d(h, kernel_size=2, stride=2)
+        conv2 = F.relu(self.conv1_2(h), inplace=True)
+        h = F.max_pool2d(conv2, kernel_size=2, stride=2)
 
         h = F.relu(self.conv2_1(h), inplace=True)
-        h = F.relu(self.conv2_2(h), inplace=True)
-        h = F.max_pool2d(h, kernel_size=2, stride=2)
+        conv4 = F.relu(self.conv2_2(h), inplace=True)
+        h = F.max_pool2d(conv4, kernel_size=2, stride=2)
 
         h = F.relu(self.conv3_1(h), inplace=True)
-        h = F.relu(self.conv3_2(h), inplace=True)
-        h = F.relu(self.conv3_3(h), inplace=True)
-        h = F.max_pool2d(h, kernel_size=2, stride=2)
+        conv6 = F.relu(self.conv3_2(h), inplace=True)
 
-        h = F.relu(self.conv4_1(h), inplace=True)
-        h = F.relu(self.conv4_2(h), inplace=True)
-        relu4_2 = h
-        conv4_3 = self.conv4_3(h)
-        h = F.relu(conv4_3, inplace=True)
-        relu4_3 = h
-        h = F.max_pool2d(h, kernel_size=2, stride=2)
-
-        relu5_1 = F.relu(self.conv5_1(h), inplace=True)
-        relu5_2 = F.relu(self.conv5_2(relu5_1), inplace=True)
-        relu5_3 = F.relu(self.conv5_3(relu5_2), inplace=True)
-
-        if opt.vgg_choose == "conv4_3":
-            return relu4_3
-        elif opt.vgg_choose == "conv4_2":
-            return relu4_2
-        elif opt.vgg_choose == "conv5_3":
-            return relu5_3
-        elif opt.vgg_choose == "conv5_2":
-            return relu5_2
-        elif opt.vgg_choose == "conv5_1":
-            return relu5_1
+        return {'conv2': conv2, 'conv4': conv4, 'conv6': conv6}
 
 
 if __name__ == '__main__':
