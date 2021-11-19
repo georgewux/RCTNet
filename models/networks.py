@@ -211,7 +211,8 @@ class GlobalRCT(nn.Module):
 
     def forward(self, feature, p_high):
         h, w = feature.shape[2], feature.shape[3]
-        f_r = feature.reshape(feature.size(0), -1, self.opt.represent_feature)
+        f_r = feature.reshape(feature.size(0), self.opt.represent_feature, -1)
+        f_r = f_r.transpose(1, 2)
         r_g = self.r_conv(p_high)
         r_g = r_g.reshape(r_g.size(0), self.opt.represent_feature, self.opt.ngf)
         t_g = self.t_conv(p_high)
@@ -264,7 +265,8 @@ class LocalRCT(nn.Module):
                 t_k = torch.cat((t_k, cp), dim=2)
 
                 f_k = nfeature[:, :, i * mesh_h:(i + 1) * mesh_h, j * mesh_w:(j + 1) * mesh_w]
-                f_k = f_k.reshape(feature.size(0), -1, self.opt.represent_feature)
+                f_k = f_k.reshape(feature.size(0), self.opt.represent_feature, -1)
+                f_k = f_k.transpose(1, 2)
 
                 attention = torch.bmm(f_k, r_k) / torch.sqrt(torch.tensor(self.opt.represent_feature))
                 attention = self.act(attention)
