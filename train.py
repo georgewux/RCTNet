@@ -33,7 +33,7 @@ def main():
 
     total_steps = 0
 
-    for epoch in range(1, opt.num_epoch):
+    for epoch in range(1, opt.num_epoch + 1):
         epoch_start_time = time.time()
         for i, data in enumerate(dataset):
             iter_start_time = time.time()

@@ -79,7 +79,6 @@ class RCTNet(BaseModel):
         self.vgg_loss = self.vgg_criterion.compute_vgg_loss(self.vgg, self.Y, self.target_img)
         self.loss = self.l1_loss + self.opt.balance_lambda * self.vgg_loss
 
-        # self.loss.backward(retain_graph=True)
         self.loss.backward()
 
     def optimize_parameters(self):

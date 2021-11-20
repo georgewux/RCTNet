@@ -282,7 +282,7 @@ class Fusion(nn.Module):
     def __init__(self, opt):
         super(Fusion, self).__init__()
 
-        self.w = nn.Parameter(torch.tensor([0.6, 0.1], dtype=torch.float32))
+        self.w = nn.Parameter(torch.tensor([0.3, 0.7], dtype=torch.float32))
         self.encoder = RCTEncoder(opt)
         self.bifpn = BiFPNBlock(opt)
         self.global_rct = GlobalRCT(opt)
@@ -292,7 +292,8 @@ class Fusion(nn.Module):
     def forward(self, org_img, img):
         feature = self.extract_f(org_img)
         p_list = self.bifpn(self.encoder(img))
-        return F.relu(self.w[0], True) * self.global_rct(feature, p_list[3]) + F.relu(self.w[1], True) * self.local_rct(
+        # return self.local_rct(feature, p_list[0])
+        return F.relu(self.w[0]) * self.global_rct(feature, p_list[3]) + F.relu(self.w[1]) * self.local_rct(
             feature, p_list[0])
 
 
