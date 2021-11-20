@@ -33,8 +33,7 @@ class RCTNet(BaseModel):
             param.requires_grad = False
 
         # Definition of Network
-        self.fusion, param = networks.define_fusion(self.opt, self.device)
-        self.params = param
+        self.fusion, self.params = networks.define_fusion(self.opt, self.device)
         # print(self.params)
 
         if self.isTrain:
@@ -66,6 +65,9 @@ class RCTNet(BaseModel):
         self.input_img.resize_(input_img.size()).copy_(input_img)
         self.target_img.resize_(target_img.size()).copy_(target_img)
         self.img_paths = data['A_paths' if AtoB else 'B_paths']
+
+    def predict(self):
+        pass
 
     # get image paths
     def get_image_paths(self):
@@ -109,11 +111,12 @@ if __name__ == '__main__':
     device = torch.device('cpu')
 
     a = torch.randn(8, 3, 256, 256).to(device)
-    b = torch.randn(8, 3, 256, 256).to(device)
     x_org = torch.randn(8, 3, 400, 600).to(device)
+    x_tar = torch.randn(8, 3, 400, 600).to(device)
+
     a_path = []
     b_path = []
-    img_group = {'A': a, 'B': b, 'input': x_org, 'A_paths': a_path, 'B_paths': b_path}
+    img_group = {'A': a, 'input': x_org, 'target': x_tar, 'A_paths': a_path, 'B_paths': b_path}
 
     from options import TrainOptions
     opt = TrainOptions().parse()

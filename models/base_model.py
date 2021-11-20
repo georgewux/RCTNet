@@ -18,7 +18,7 @@ class BaseModel(object):
         pass
 
     # used in test time, with no grad
-    def test(self):
+    def predict(self):
         pass
 
     def get_image_paths(self):
