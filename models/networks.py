@@ -282,7 +282,7 @@ class Fusion(nn.Module):
     def __init__(self, opt):
         super(Fusion, self).__init__()
 
-        self.w = nn.Parameter(torch.tensor([0.3, 0.7], dtype=torch.float32))
+        self.w = nn.Parameter(torch.tensor([0.3, 0.3], dtype=torch.float32))
         self.encoder = RCTEncoder(opt)
         self.bifpn = BiFPNBlock(opt)
         self.global_rct = GlobalRCT(opt)
