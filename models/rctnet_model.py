@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 from utils import util
-from models import networks  # 调试完改为from ... import
-from models import loss_function as Loss  # 同上
+from models import networks
+from models import loss_function as Loss
 from models.base_model import BaseModel
 from collections import OrderedDict
 
@@ -67,7 +67,9 @@ class RCTNet(BaseModel):
         self.img_paths = data['A_paths' if AtoB else 'B_paths']
 
     def predict(self):
-        pass
+        self.forward()
+        enhanced_img = util.tensor2im(self.Y.data)
+        return OrderedDict([('enhanced_img', enhanced_img)])
 
     # get image paths
     def get_image_paths(self):

@@ -1,0 +1,17 @@
+albumentations==1.1.0
+
+dominate==2.6.0
+
+matplotlib==3.4.3
+
+numpy==1.21.4
+
+opencv-python==4.5.4.58
+
+Pillow==8.4.0
+
+torch==1.9.1
+
+torchvision==0.10.1
+
+visdom==0.1.8.9
