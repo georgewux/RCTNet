@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     from options import TrainOptions
     opt = TrainOptions().parse()
-    opt.no_vgg_instance = True
+
     criterion = PerceptualLoss(opt)
 
     vgg = load_vgg16('./', device)
