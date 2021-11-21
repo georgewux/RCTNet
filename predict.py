@@ -27,8 +27,12 @@ data_loader = CustomDataLoader(opt)
 dataset = data_loader.load_data()
 model = create_model(opt)
 visualizer = Visualizer(opt)
+# 输出融合权重
 # param = model.params
-# print(param)
+# print(param[0]['params'][0])
+
+web_dir = os.path.join("./ablation/", opt.name, '%s_%s' % (opt.phase, opt.which_epoch))
+webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.which_epoch))
 
 print(len(dataset))
 for i, data in enumerate(dataset):
@@ -36,4 +40,6 @@ for i, data in enumerate(dataset):
     visuals = model.predict()
     img_path = model.get_image_paths()
     print('process image... %s' % img_path)
+    visualizer.save_images(webpage, visuals, img_path)
 
+webpage.save()
