@@ -45,7 +45,6 @@ class BaseOptions(object):
         # perceptual loss from vgg
         self.parser.add_argument('--vgg_mean', action='store_true', help='substract mean in vgg loss')
 
-
         # Visualization
         self.parser.add_argument('--display_id', type=int, default=1, help='window id of the web display')
         self.parser.add_argument('--display_winsize', type=int, default=256, help='display window size')
