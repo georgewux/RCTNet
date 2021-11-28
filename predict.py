@@ -1,5 +1,6 @@
 import os
 import time
+import numpy as np
 from options import TestOptions
 from custom_dataloader import CustomDataLoader
 from utils.visualizer import Visualizer
@@ -20,16 +21,20 @@ def create_model(opt):
 
 
 opt = TestOptions().parse()
-opt.batch_size = 1
-opt.no_flip = True
+# opt.name = 'rctnet_LoL_batch8'
+# opt.batch_size = 1
+# opt.no_flip = True
+# opt.which_epoch = '500'
 
 data_loader = CustomDataLoader(opt)
 dataset = data_loader.load_data()
 model = create_model(opt)
 visualizer = Visualizer(opt)
+
 # 输出融合权重
-# param = model.params
-# print(param[0]['params'][0])
+param = model.params
+param = np.array(param[0]['params'][0].data.cpu())
+print('fusion weight: {}'.format(param))
 
 web_dir = os.path.join("./ablation/", opt.name, '%s_%s' % (opt.phase, opt.which_epoch))
 webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.which_epoch))
