@@ -41,7 +41,7 @@ def main():
     split_rate = 0.1
 
     # 指向数据集文件夹
-    data_root = "./data"
+    data_root = "./Five_K"
     low_dir_name = "dataA"
     high_dir_name = "dataB"
 
