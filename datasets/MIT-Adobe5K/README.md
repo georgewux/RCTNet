@@ -16,7 +16,6 @@
       ```Folder```=```datasets/MIT-Adobe5K/Five_K/dataA/```.
     - File Naming: click ```Rename To```, and select ```Edit...```. Clear the edit box at first. Then, choose```{Sequence # (0001)>>}``` in ```Sequence and Date```, and click ```Insert```.
     - ```Image Format```=```JPEG``` (using ```jpg``` should be fine). ```Quality```=100. ```Color Space```=```sRGB```
-    - Image Sizing: ```Resize to Fit```=```Long Edge```. Click ```Don't Enlarge```. Fill in ```500``` ```pixels```. ```Resolution``` doesn't matter since it is not the actual image resolution in pixels.
     - Finally, click ```Export```.
 * You can compare the first exported image (0001.jpg) with [this image](https://github.com/MagicGeorge/RCTNet/raw/master/datasets/MIT-Adobe5K/input.jpg). If you have done the previous steps correctly, you should get an identical image.
 
@@ -30,6 +29,5 @@
       ```Folder```=```datasets/MIT-Adobe5K/Five_K/dataB/```.
     - File Naming: click ```Rename To```, and select ```Edit...```. Clear the edit box at first. Then, choose```{Sequence # (0001)>>}``` in ```Sequence and Date```, and click ```Insert```.
     - ```Image Format```=```JPEG```. ```Quality```=100. ```Color Space```=```sRGB```
-    - Image Sizing: ```Resize to Fit```=```Long Edge```. Click ```Don't Enlarge```. Fill in ```500``` ```pixels```. ```Resolution``` doesn't matter since it is not the actual image resolution in pixels.
     - Finally, click ```Export```.
 * You can compare the first exported image (0001.jpg) with [this image](https://github.com/MagicGeorge/RCTNet/raw/master/datasets/MIT-Adobe5K/target.jpg). If you have done the previous steps correctly, you should get an identical image.
