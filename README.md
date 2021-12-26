@@ -25,3 +25,31 @@ GPU: Nvidia TITAN V
 ### Predict
 ```python -m visdom.server -port=8097```</br>
 ```python scripts/script.py --predict```
+
+### Structure of project folder
+```
+E:\RCTNet>tree
+Folder PATH list
+├─ablation
+├─checkpoints
+│  ├─rctnet_FiveK_batch8
+│  └─rctnet_LoL_batch8
+├─datasets
+│  ├─LoL
+│  │  ├─eval
+│  │  │  ├─dataA
+│  │  │  └─dataB
+│  │  └─train
+│  │     ├─dataA
+│  │     └─dataB
+│  └─MIT-Adobe5K
+│       ├─eval
+│       │  ├─dataA
+│       │  └─dataB
+│       └─train
+│          ├─dataA
+│          └─dataB
+├─models
+├─scripts
+└─utils
+```
