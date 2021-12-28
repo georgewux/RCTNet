@@ -1,3 +1,6 @@
+## Representative Color Transform for Image Enhancement
+This is a PyTorch implementation of RCTNet. 
+
 ```
 @InProceedings{Kim_2021_ICCV,
 author    = {Kim, Hanul and Choi, Su-Min and Kim, Chang-Su and Koh, Yeong Jun},
@@ -19,6 +22,7 @@ GPU: Nvidia TITAN V
 ```pip install -r requirement.txt```
 
 ### Train
+The original LOL dataset can be downloaded from [here](https://daooshee.github.io/BMVC2018website/).  
 ```python -m visdom.server -port=8097```</br>
 ```python scripts/script.py --train```
 
@@ -26,10 +30,15 @@ GPU: Nvidia TITAN V
 ```python -m visdom.server -port=8097```</br>
 ```python scripts/script.py --predict```
 
+### Evaluation on LOL Dataset
+<img src="figures/79.png" width="400px"/><img src="figures/79_enhanced.png" width="400px"/>
+<img src="figures/111.png" width="400px"/><img src="figures/111_enhanced.png" width="400px"/>
+<img src="figures/146.png" width="400px"/><img src="figures/146_enhanced.png" width="400px"/>
+
 ### Structure of project folder
 ```
-E:\RCTNet>tree
-Folder PATH list
+$ tree
+.
 ├─ablation
 ├─checkpoints
 │  ├─rctnet_FiveK_batch8
@@ -43,12 +52,12 @@ Folder PATH list
 │  │     ├─dataA
 │  │     └─dataB
 │  └─MIT-Adobe5K
-│       ├─eval
-│       │  ├─dataA
-│       │  └─dataB
-│       └─train
-│          ├─dataA
-│          └─dataB
+│     ├─eval
+│     │  ├─dataA
+│     │  └─dataB
+│     └─train
+│        ├─dataA
+│        └─dataB
 ├─models
 ├─scripts
 └─utils

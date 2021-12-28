@@ -33,20 +33,20 @@ def main():
     high_dir_name = "dataB"
 
     # 建立保存训练集的文件夹
-    # train_root = os.path.join(data_root, "train")
+    train_root = os.path.join(data_root, "train")
+
+    origin_high_path = os.path.join(train_root, high_dir_name)
+    assert os.path.exists(origin_high_path), "path '{}' does not exist.".format(origin_high_path)
+    origin_low_path = os.path.join(train_root, low_dir_name)
+    assert os.path.exists(origin_low_path), "path '{}' does not exist.".format(origin_low_path)
 
     # 建立保存验证集的文件夹
     eval_root = os.path.join(data_root, "eval")
 
-    # origin_high_path = os.path.join(train_root, high_dir_name)
+    # origin_high_path = os.path.join(eval_root, high_dir_name)
     # assert os.path.exists(origin_high_path), "path '{}' does not exist.".format(origin_high_path)
-    # origin_low_path = os.path.join(train_root, low_dir_name)
+    # origin_low_path = os.path.join(eval_root, low_dir_name)
     # assert os.path.exists(origin_low_path), "path '{}' does not exist.".format(origin_low_path)
-
-    origin_high_path = os.path.join(eval_root, high_dir_name)
-    assert os.path.exists(origin_high_path), "path '{}' does not exist.".format(origin_high_path)
-    origin_low_path = os.path.join(eval_root, low_dir_name)
-    assert os.path.exists(origin_low_path), "path '{}' does not exist.".format(origin_low_path)
 
     high_images = os.listdir(origin_high_path)
     low_images = os.listdir(origin_low_path)
