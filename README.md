@@ -32,10 +32,12 @@ The original LOL dataset can be downloaded from [here](https://daooshee.github.i
 
 ### Evaluation on LOL Dataset
 <img src="figures/79.png" width="400px"/><img src="figures/79_enhanced.png" width="400px"/>
+
 <img src="figures/111.png" width="400px"/><img src="figures/111_enhanced.png" width="400px"/>
+
 <img src="figures/146.png" width="400px"/><img src="figures/146_enhanced.png" width="400px"/>
 
-### Structure of project folder
+### Structure of Project Folder
 ```
 $ tree
 .
