@@ -319,7 +319,7 @@ class Vgg16(nn.Module):
         self.conv5_2 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
         self.conv5_3 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
 
-    def forward(self, X, opt):
+    def forward(self, X):
         h = F.relu(self.conv1_1(X), inplace=True)
         conv2 = F.relu(self.conv1_2(h), inplace=True)
         h = F.max_pool2d(conv2, kernel_size=2, stride=2)

@@ -38,8 +38,8 @@ class PerceptualLoss(nn.Module):
     def compute_vgg_loss(self, vgg, img, target):
         img_vgg = vgg_preprocess(img, self.opt)
         target_vgg = vgg_preprocess(target, self.opt)
-        img_fea = vgg(img_vgg, self.opt)
-        target_fea = vgg(target_vgg, self.opt)
+        img_fea = vgg(img_vgg)
+        target_fea = vgg(target_vgg)
 
         return F.l1_loss(img_fea['conv2'], target_fea['conv2']) + F.l1_loss(
             img_fea['conv4'], target_fea['conv4']) + F.l1_loss(img_fea['conv6'], target_fea['conv6'])
