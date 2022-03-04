@@ -11,8 +11,8 @@ year      = {2021},
 pages     = {4459-4468}
 }
 ```
-[Paper](https://openaccess.thecvf.com/content/ICCV2021/html/Kim_Representative_Color_Transform_for_Image_Enhancement_ICCV_2021_paper.html)
-|[Slide(unofficial, in Chinese)](https://docs.google.com/presentation/d/1wM1X7p1j7lD0r9HvR9o_JiLuRG12G-GU/edit?usp=sharing&ouid=114646893705937803496&rtpof=true&sd=true)
+[[Paper]](https://openaccess.thecvf.com/content/ICCV2021/html/Kim_Representative_Color_Transform_for_Image_Enhancement_ICCV_2021_paper.html)
+[[Slide(unofficial, in Chinese)]](https://docs.google.com/presentation/d/1wM1X7p1j7lD0r9HvR9o_JiLuRG12G-GU/edit?usp=sharing&ouid=114646893705937803496&rtpof=true&sd=true)
 
 
 ### Develop Environment
